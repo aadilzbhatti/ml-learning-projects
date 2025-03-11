@@ -1,0 +1,3 @@
+[submodule "karpathy-lectures/makemore"]
+	path = karpathy-lectures/makemore
+	url = https://github.com/karpathy/makemore.git
