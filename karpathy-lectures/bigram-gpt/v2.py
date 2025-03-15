@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
+import time
 
 # hyperparameters
 batch_size = 64 # how many independent sequences will we process in parallel?
@@ -8,14 +9,14 @@ block_size = 256 # what is the maximum context length for predictions?
 max_iters = 5000
 eval_interval = 500
 learning_rate = 3e-4
-device = 'mps' if torch.mps.is_available() else 'cpu'
+device = 'mps' if torch.mps.is_available() else 'cuda' if torch.cuda.is_available() else 'cpu'
 eval_iters = 200
 n_embd = 384
 n_head = 6 # every head is n_embed // n_head = 64 dimensions
 n_layer = 6
 dropout = 0.2
 
-torch.manual_seed(1337)
+# torch.manual_seed(1337)
 
 # wget https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt
 with open('input.txt', 'r', encoding='utf-8') as f:
@@ -185,28 +186,36 @@ class BigramLanguageModel(nn.Module):
             idx = torch.cat((idx, idx_next), dim=1) # (B, T+1)
         return idx
 
-model = BigramLanguageModel()
-model.to(device)
+# model = BigramLanguageModel()
+# model.to(device)
 
-# create a PyTorch optimizer
-optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+# # create a PyTorch optimizer
+# optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
-for iter in range(max_iters):
+# for iter in range(max_iters):
 
-    # every once in a while, evaluate the loss on train and val sets
-    if iter % eval_interval == 0:
-        losses = estimate_loss()
-        print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+#     # every once in a while, evaluate the loss on train and val sets
+#     if iter % eval_interval == 0:
+#         losses = estimate_loss()
+#         print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
 
-    # sample a batch of data
-    xb, yb = get_batch('train')
+#     # sample a batch of data
+#     xb, yb = get_batch('train')
 
-    # evaluate the loss
-    logits, loss = model(xb, yb)
-    optimizer.zero_grad(set_to_none=True)
-    loss.backward()
-    optimizer.step()
+#     # evaluate the loss
+#     logits, loss = model(xb, yb)
+#     optimizer.zero_grad(set_to_none=True)
+#     loss.backward()
+#     optimizer.step()
+
+model = torch.load("model_complete.pth", map_location="mps", weights_only=False)
+
+start_time = time.time()
 
 # generate from the model
+max_tokens = 10000
 context = torch.zeros((1, 1), dtype=torch.long, device=device)
-print(decode(model.generate(context, max_new_tokens=500)[0].tolist()))
+print(decode(model.generate(context, max_new_tokens=max_tokens)[0].tolist()))
+
+end_time = time.time()
+print(f"\nGenerated {max_tokens} tokens in {end_time - start_time} seconds on device {device}.")
